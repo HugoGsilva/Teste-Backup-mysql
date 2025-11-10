@@ -1,0 +1,13 @@
+{
+  "name": "teste-backup-app",
+  "version": "1.0.0",
+  "description": "BFF Orquestrador para Teste-Backup",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mysql2": "^3.3.0"
+  }
+}

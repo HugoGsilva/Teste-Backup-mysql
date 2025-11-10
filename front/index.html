@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Front - Teste Backup</title>
+	<style>
+		body { font-family: Arial, sans-serif; margin: 20px; }
+		#data-list { margin-top: 20px; }
+		.item { padding: 6px 8px; border-bottom: 1px solid #eee; }
+		.controls > * { margin-right: 8px; }
+	</style>
+</head>
+<body>
+	<h1>Teste Backup - Front</h1>
+
+	<label for="item-input">Novo item:</label>
+	<input id="item-input" type="text" placeholder="Digite um valor" />
+	<div class="controls" style="margin-top:8px;">
+		<button id="insert-btn">Inserir</button>
+		<button id="backup-btn">Fazer Backup</button>
+		<button id="destroy-btn">Simular Desastre</button>
+		<button id="restore-btn">Recuperar</button>
+	</div>
+
+	<div id="data-list"></div>
+
+	<script src="./main.js"></script>
+</body>
+</html>
