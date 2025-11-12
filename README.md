@@ -1,24 +1,138 @@
-# Teste-Backup-mysql
+# Sistema de Backup MySQL
 
-Sistema simplificado para testar backups MySQL com interface web.
+Sistema para testar backup e restore de banco de dados MySQL usando Docker, Node.js e mysqldump.
 
-## Arquitetura
+## 📋 O que faz
 
-- `app`: Container Node.js (Express) servindo a UI em `http://localhost:3000`, executando `mysqldump`/`mysql` para backup e restauração e garantindo o schema da tabela `itens`.
-- `db`: Container MySQL 8.0 inicializado com `db/init.sql`.
-- Os arquivos `.sql` gerados ficam em `./backups`, montado no container `app` como `/backups`.
+- Interface web para gerenciar dados
+- Criar backups do banco de dados
+- Simular perda de dados
+- Restaurar dados de backups
 
-## Como executar
+## 🚀 Como rodar
 
-1. `docker compose up -d --build`
-2. Acompanhe os logs com `docker compose logs -f app db` até ver `Tabela itens verificada/criada`.
-3. Acesse `http://localhost:3000` para inserir itens, fazer backup, truncar e restaurar.
+### 1. Iniciar o projeto
 
-## Observações
+```bash
+docker compose up -d --build
+```
 
-- Backups listáveis pelo host: `ls backups` ou dentro do container `docker compose exec app ls /backups`.
-- Para reiniciar tudo (apaga dados e backups): `docker compose down -v` seguido de `rm -rf backups` (se desejar).
-- Logs MySQL: `docker compose logs -f db`.
-- Se `init.sql` não rodar, confirme final de linha LF, nome do banco (`test_db`) e execute `docker compose down -v && docker compose up -d`.
-- Para inspecionar o script: `docker compose exec db sh -c "ls -la /docker-entrypoint-initdb.d && cat /docker-entrypoint-initdb.d/init.sql"`.
-- Variáveis padrão: `MYSQL_ROOT_PASSWORD=Secret123!` e banco `test_db`. Ajuste conforme necessário, lembrando que o MySQL exige senha com pelo menos 8 caracteres.
+### 2. Acessar a interface
+
+Abra no navegador: **http://localhost:3000**
+
+### 3. Parar o projeto
+
+```bash
+docker compose down
+```
+
+### 4. Resetar tudo (apagar dados e backups)
+
+```bash
+docker compose down -v
+rm -rf backups/*
+```
+
+## 🔍 Acessar MySQL Interativo
+
+### Entrar no MySQL
+
+```bash
+docker compose exec db mysql -uroot -pSecret123! test_db
+```
+
+### Comandos úteis dentro do MySQL
+
+```sql
+-- Ver todos os dados
+SELECT * FROM itens;
+
+-- Contar registros
+SELECT COUNT(*) FROM itens;
+
+-- Ver estrutura da tabela
+DESCRIBE itens;
+
+-- Sair
+exit;
+```
+
+### Executar query direta (sem entrar no MySQL)
+
+```bash
+# Ver dados
+docker compose exec db mysql -uroot -pSecret123! test_db -e "SELECT * FROM itens"
+
+# Contar registros
+docker compose exec db mysql -uroot -pSecret123! test_db -e "SELECT COUNT(*) FROM itens"
+```
+
+## 📁 Estrutura
+
+```
+.
+├── app/              # Backend Node.js + API
+├── front/            # Interface web
+├── db/               # Scripts SQL
+├── backups/          # Arquivos de backup (.sql)
+└── docker-compose.yml
+```
+
+## 🧪 Testar backup/restore
+
+### Via interface web (http://localhost:3000)
+
+1. Inserir dados
+2. Clicar em "Fazer Backup"
+3. Clicar em "Simular Desastre"
+4. Clicar em "Recuperar"
+
+### Via PowerShell
+
+```powershell
+# Inserir dado
+Invoke-WebRequest -Uri http://localhost:3000/api/item -Method POST -ContentType "application/json" -Body '{"nome":"Teste"}'
+
+# Fazer backup
+Invoke-WebRequest -Uri http://localhost:3000/api/trigger-backup -Method POST
+
+# Deletar tudo
+Invoke-WebRequest -Uri http://localhost:3000/api/delete-all -Method POST
+
+# Restaurar
+Invoke-WebRequest -Uri http://localhost:3000/api/trigger-restore -Method POST
+```
+
+## 📊 Ver logs
+
+```bash
+# Logs do backend
+docker compose logs -f app
+
+# Logs do MySQL
+docker compose logs -f db
+
+# Status dos containers
+docker compose ps
+```
+
+## 🔧 Credenciais
+
+- **Host**: db (dentro do Docker) / localhost (fora)
+- **Usuário**: root
+- **Senha**: Secret123!
+- **Database**: test_db
+- **Porta Web**: 3000
+
+## 📦 Backups
+
+Os backups são salvos em: `./backups/backup-YYYYMMDDHHMMSS.sql`
+
+```bash
+# Listar backups
+ls -lh backups/
+
+# Ver conteúdo de um backup
+cat backups/backup-*.sql
+```

@@ -54,7 +54,7 @@ function buildMysqlArgs(includeDatabase = false) {
 }
 
 function buildDumpArgs() {
-  return [...buildMysqlArgs(false), '--single-transaction', '--quick', '--hex-blob', DB_DATABASE];
+  return [...buildMysqlArgs(false), '--skip-ssl', '--single-transaction', '--quick', '--hex-blob', DB_DATABASE];
 }
 
 async function listBackups() {
@@ -79,7 +79,7 @@ async function listBackups() {
 }
 
 async function runRestoreFrom(sqlFile) {
-  const mysqlArgs = [...buildMysqlArgs(true), '-e', `SOURCE ${sqlFile}`];
+  const mysqlArgs = [...buildMysqlArgs(true), '--skip-ssl', '-e', `SOURCE ${sqlFile}`];
   await execFileAsync('mysql', mysqlArgs, { maxBuffer: BACKUP_BUFFER });
 }
 
@@ -183,7 +183,23 @@ app.get('/health', async (req, res) => {
 });
 
 const publicDir = path.join(__dirname, 'public');
-app.use(express.static(publicDir));
+app.use(express.static(publicDir, {
+  maxAge: '1h',
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, filePath) => {
+    // Set proper MIME types
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    } else if (filePath.endsWith('.js')) {
+      res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+    } else if (filePath.endsWith('.css')) {
+      res.setHeader('Content-Type', 'text/css; charset=utf-8');
+    }
+    // Set caching headers
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
 
 // espera o DB ficar pronto antes de iniciar o servidor
 async function waitForDb(retries = 15, delayMs = 2000) {
