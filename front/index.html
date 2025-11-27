@@ -3,27 +3,321 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>Front - Teste Backup</title>
+	<title>Sistema de Backup MySQL - Brasília</title>
 	<style>
-		body { font-family: Arial, sans-serif; margin: 20px; }
-		#data-list { margin-top: 20px; }
-		.item { padding: 6px 8px; border-bottom: 1px solid #eee; }
-		.controls > * { margin-right: 8px; }
+		* { margin: 0; padding: 0; box-sizing: border-box; }
+		
+		body {
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			min-height: 100vh;
+			padding: 20px;
+		}
+		
+		.container {
+			max-width: 900px;
+			margin: 0 auto;
+		}
+		
+		.card {
+			background: rgba(255, 255, 255, 0.95);
+			border-radius: 16px;
+			padding: 24px;
+			margin-bottom: 20px;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+			backdrop-filter: blur(10px);
+		}
+		
+		h1 {
+			color: #333;
+			margin-bottom: 8px;
+			font-size: 2em;
+		}
+		
+		h2 {
+			color: #555;
+			margin-bottom: 16px;
+			font-size: 1.3em;
+			border-bottom: 2px solid #667eea;
+			padding-bottom: 8px;
+		}
+		
+		/* Relógio */
+		.clock-container {
+			text-align: center;
+			padding: 32px 24px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border-radius: 16px;
+		}
+		
+		.clock-label {
+			font-size: 1.2em;
+			opacity: 0.9;
+			margin-bottom: 12px;
+			font-weight: 500;
+		}
+		
+		.clock-display {
+			font-size: 4em;
+			font-weight: 700;
+			font-family: 'Courier New', monospace;
+			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+			letter-spacing: 4px;
+		}
+		
+		.date-display {
+			font-size: 1.4em;
+			margin-top: 12px;
+			opacity: 0.95;
+		}
+		
+		/* Backup Automático */
+		.auto-backup-controls {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 16px;
+			margin-bottom: 20px;
+		}
+		
+		.control-group {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+		}
+		
+		label {
+			font-weight: 600;
+			color: #555;
+			font-size: 0.95em;
+		}
+		
+		input[type="number"] {
+			padding: 12px;
+			border: 2px solid #ddd;
+			border-radius: 8px;
+			font-size: 1em;
+			transition: all 0.3s;
+		}
+		
+		input[type="number"]:focus {
+			outline: none;
+			border-color: #667eea;
+			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+		}
+		
+		.status-indicator {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 16px;
+			border-radius: 8px;
+			font-weight: 600;
+		}
+		
+		.status-indicator.active {
+			background: #d4edda;
+			color: #155724;
+		}
+		
+		.status-indicator.inactive {
+			background: #f8d7da;
+			color: #721c24;
+		}
+		
+		.status-dot {
+			width: 12px;
+			height: 12px;
+			border-radius: 50%;
+			animation: pulse 2s infinite;
+		}
+		
+		.status-indicator.active .status-dot {
+			background: #28a745;
+		}
+		
+		.status-indicator.inactive .status-dot {
+			background: #dc3545;
+			animation: none;
+		}
+		
+		@keyframes pulse {
+			0%, 100% { opacity: 1; }
+			50% { opacity: 0.5; }
+		}
+		
+		.next-backup {
+			margin-top: 12px;
+			padding: 12px;
+			background: #e7f3ff;
+			border-left: 4px solid #667eea;
+			border-radius: 4px;
+			font-size: 0.95em;
+		}
+		
+		/* Botões */
+		button {
+			padding: 12px 24px;
+			border: none;
+			border-radius: 8px;
+			font-size: 1em;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s;
+			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+		}
+		
+		button:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+		}
+		
+		button:active {
+			transform: translateY(0);
+		}
+		
+		.btn-primary {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+		}
+		
+		.btn-success {
+			background: #28a745;
+			color: white;
+		}
+		
+		.btn-danger {
+			background: #dc3545;
+			color: white;
+		}
+		
+		.btn-warning {
+			background: #ffc107;
+			color: #212529;
+		}
+		
+		.btn-toggle {
+			width: 100%;
+			margin-top: 12px;
+		}
+		
+		/* Controles de dados */
+		.data-controls {
+			display: flex;
+			align-items: flex-end;
+			gap: 12px;
+			margin-bottom: 20px;
+		}
+		
+		.data-controls input {
+			flex: 1;
+		}
+		
+		.action-buttons {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			gap: 12px;
+			margin-bottom: 20px;
+		}
+		
+		/* Lista de dados */
+		#data-list {
+			margin-top: 20px;
+			max-height: 300px;
+			overflow-y: auto;
+		}
+		
+		.item {
+			padding: 12px;
+			border-bottom: 1px solid #eee;
+			transition: background 0.2s;
+		}
+		
+		.item:hover {
+			background: #f8f9fa;
+		}
+		
+		.item:last-child {
+			border-bottom: none;
+		}
+		
+		/* Responsivo */
+		@media (max-width: 768px) {
+			.auto-backup-controls {
+				grid-template-columns: 1fr;
+			}
+			
+			.clock-display {
+				font-size: 2.5em;
+			}
+			
+			.action-buttons {
+				grid-template-columns: 1fr;
+			}
+		}
 	</style>
 </head>
 <body>
-	<h1>Teste Backup - Front</h1>
-
-	<label for="item-input">Novo item:</label>
-	<input id="item-input" type="text" placeholder="Digite um valor" />
-	<div class="controls" style="margin-top:8px;">
-		<button id="insert-btn">Inserir</button>
-		<button id="backup-btn">Fazer Backup</button>
-		<button id="destroy-btn">Simular Desastre</button>
-		<button id="restore-btn">Recuperar</button>
+	<div class="container">
+		<!-- Relógio de Brasília -->
+		<div class="card">
+			<div class="clock-container">
+				<div class="clock-label">Horário de Brasília (UTC-3)</div>
+				<div class="clock-display" id="clock">--:--:--</div>
+				<div class="date-display" id="date">--/--/----</div>
+			</div>
+		</div>
+		
+		<!-- Backup Automático -->
+		<div class="card">
+			<h2>⚙️ Backup Automático</h2>
+			
+			<div class="auto-backup-controls">
+				<div class="control-group">
+					<label for="trigger-second">Executar nos segundos:</label>
+					<input id="trigger-second" type="number" min="0" max="59" value="30" placeholder="0-59" />
+					<small style="color: #666;">O backup será executado quando o relógio atingir este segundo (a cada minuto)</small>
+				</div>
+				
+				<div class="control-group">
+					<label>Status do Backup Automático:</label>
+					<div id="auto-status" class="status-indicator inactive">
+						<div class="status-dot"></div>
+						<span>Desativado</span>
+					</div>
+				</div>
+			</div>
+			
+			<button id="toggle-auto-backup" class="btn-primary btn-toggle">
+				Ativar Backup Automático
+			</button>
+			
+			<div id="next-backup-info" class="next-backup" style="display: none;">
+				⏱️ Próximo backup em: <strong id="countdown">--</strong> segundos
+			</div>
+		</div>
+		
+		<!-- Controles de Dados -->
+		<div class="card">
+			<h2>📊 Gerenciar Dados</h2>
+			
+			<div class="data-controls">
+				<div style="flex: 1;">
+					<label for="item-input">Novo item:</label>
+					<input id="item-input" type="text" placeholder="Digite um valor" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-top: 4px;" />
+				</div>
+				<button id="insert-btn" class="btn-primary">Inserir</button>
+			</div>
+			
+			<div class="action-buttons">
+				<button id="backup-btn" class="btn-success">📦 Fazer Backup</button>
+				<button id="destroy-btn" class="btn-danger">💥 Simular Desastre</button>
+				<button id="restore-btn" class="btn-warning">♻️ Recuperar</button>
+			</div>
+			
+			<div id="data-list"></div>
+		</div>
 	</div>
-
-	<div id="data-list"></div>
 
 	<script src="./main.js"></script>
 </body>

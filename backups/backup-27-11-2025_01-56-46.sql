@@ -27,7 +27,7 @@ CREATE TABLE `itens` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nome` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -39,7 +39,11 @@ LOCK TABLES `itens` WRITE;
 INSERT INTO `itens` VALUES
 (1,'asdasd'),
 (2,'asdasd'),
-(3,'oi vamos testar??');
+(3,'oi vamos testar??'),
+(4,'asdasdasd'),
+(5,'asdasd'),
+(6,'tmj?'),
+(7,'Item Teste 1');
 /*!40000 ALTER TABLE `itens` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -52,4 +56,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2025-11-12 22:26:20
+-- Dump completed on 2025-11-27  4:56:46

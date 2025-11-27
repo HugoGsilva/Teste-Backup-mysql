@@ -18,6 +18,20 @@ const DB_DATABASE = process.env.DB_DATABASE || process.env.DB_NAME || 'test';
 const BACKUP_DIR = process.env.BACKUP_DIR || path.join(__dirname, 'backups');
 const BACKUP_BUFFER = Number(process.env.BACKUP_BUFFER || 64 * 1024 * 1024);
 
+// Configuração do backup automático
+let autoBackupConfig = {
+  enabled: false,
+  triggerSecond: 30, // Segundo em que o backup será executado (0-59)
+  lastBackupMinute: -1 // Controle para executar apenas uma vez por minuto
+};
+
+// Função para obter horário de Brasília
+function getBrasiliaTime() {
+  const now = new Date();
+  const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+  return new Date(now.getTime() + (brasiliaOffset - now.getTimezoneOffset()) * 60000);
+}
+
 const pool = mysql.createPool({
   host: DB_HOST,
   user: DB_USER,
@@ -136,7 +150,19 @@ app.get('/api/backups', async (req, res) => {
 app.post('/api/trigger-backup', async (req, res) => {
   try {
     await ensureBackupDir();
-    const timestamp = new Date().toISOString().replace(/[-:TZ.]/g, '').slice(0, 14);
+    // Formato brasileiro: DD-MM-YYYY_HH-MM-SS (horário de Brasília UTC-3)
+    const now = new Date();
+    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+    const brasiliaTime = new Date(now.getTime() + (brasiliaOffset - now.getTimezoneOffset()) * 60000);
+
+    const day = String(brasiliaTime.getDate()).padStart(2, '0');
+    const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
+    const year = brasiliaTime.getFullYear();
+    const hours = String(brasiliaTime.getHours()).padStart(2, '0');
+    const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
+    const seconds = String(brasiliaTime.getSeconds()).padStart(2, '0');
+
+    const timestamp = `${day}-${month}-${year}_${hours}-${minutes}-${seconds}`;
     const filename = `backup-${timestamp}.sql`;
     const destination = path.join(BACKUP_DIR, filename);
     const dumpArgs = buildDumpArgs();
@@ -171,6 +197,77 @@ app.post('/api/trigger-restore', async (req, res) => {
       .json({ error: 'Erro ao restaurar backup', detail: (err.stderr && err.stderr.trim()) || err.message || String(err) });
   }
 });
+
+// Endpoint para obter horário de Brasília
+app.get('/api/current-time', (req, res) => {
+  try {
+    const brasiliaTime = getBrasiliaTime();
+    res.json({
+      iso: brasiliaTime.toISOString(),
+      timestamp: brasiliaTime.getTime(),
+      formatted: brasiliaTime.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+    });
+  } catch (err) {
+    console.error('GET /api/current-time error:', err);
+    res.status(500).json({ error: 'Erro ao obter horário' });
+  }
+});
+
+// Endpoint para obter configuração do backup automático
+app.get('/api/auto-backup-config', (req, res) => {
+  res.json(autoBackupConfig);
+});
+
+// Endpoint para configurar backup automático
+app.post('/api/configure-auto-backup', (req, res) => {
+  try {
+    const { enabled, triggerSecond } = req.body;
+
+    if (typeof enabled === 'boolean') {
+      autoBackupConfig.enabled = enabled;
+    }
+
+    if (typeof triggerSecond === 'number') {
+      if (triggerSecond < 0 || triggerSecond > 59) {
+        return res.status(400).json({ error: 'triggerSecond deve estar entre 0 e 59' });
+      }
+      autoBackupConfig.triggerSecond = Math.floor(triggerSecond);
+      autoBackupConfig.lastBackupMinute = -1; // Reset para permitir novo backup
+    }
+
+    console.log('Configuração de backup automático atualizada:', autoBackupConfig);
+    res.json({ ok: true, config: autoBackupConfig });
+  } catch (err) {
+    console.error('POST /api/configure-auto-backup error:', err);
+    res.status(500).json({ error: 'Erro ao configurar backup automático' });
+  }
+});
+
+// Função para executar backup automaticamente
+async function executeAutoBackup() {
+  try {
+    await ensureBackupDir();
+    const brasiliaTime = getBrasiliaTime();
+
+    const day = String(brasiliaTime.getDate()).padStart(2, '0');
+    const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
+    const year = brasiliaTime.getFullYear();
+    const hours = String(brasiliaTime.getHours()).padStart(2, '0');
+    const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
+    const seconds = String(brasiliaTime.getSeconds()).padStart(2, '0');
+
+    const timestamp = `${day}-${month}-${year}_${hours}-${minutes}-${seconds}`;
+    const filename = `backup-${timestamp}.sql`;
+    const destination = path.join(BACKUP_DIR, filename);
+    const dumpArgs = buildDumpArgs();
+
+    const { stdout } = await execFileAsync('mysqldump', dumpArgs, { maxBuffer: BACKUP_BUFFER });
+    await fsp.writeFile(destination, stdout, 'utf8');
+    console.log(`[AUTO-BACKUP] Backup automático salvo em ${destination}`);
+  } catch (err) {
+    console.error('[AUTO-BACKUP] Erro ao gerar backup automático:', err);
+  }
+}
 
 // health endpoint para checagem do container/app
 app.get('/health', async (req, res) => {
@@ -217,6 +314,23 @@ async function waitForDb(retries = 15, delayMs = 2000) {
 }
 
 const PORT = process.env.PORT || 3000;
+
+// Scheduler de backup automático - verifica a cada segundo
+setInterval(() => {
+  if (!autoBackupConfig.enabled) return;
+
+  const brasiliaTime = getBrasiliaTime();
+  const currentSecond = brasiliaTime.getSeconds();
+  const currentMinute = brasiliaTime.getMinutes();
+
+  // Executa apenas quando o segundo coincidir e não foi executado neste minuto
+  if (currentSecond === autoBackupConfig.triggerSecond && currentMinute !== autoBackupConfig.lastBackupMinute) {
+    console.log(`[AUTO-BACKUP] Iniciando backup automático aos ${currentSecond} segundos`);
+    autoBackupConfig.lastBackupMinute = currentMinute;
+    executeAutoBackup();
+  }
+}, 1000);
+
 (async () => {
   try {
     await ensureBackupDir();

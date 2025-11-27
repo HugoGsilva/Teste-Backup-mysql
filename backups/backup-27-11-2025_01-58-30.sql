@@ -1,4 +1,4 @@
-/*M!999999\- enable the sandbx mode */ 
+/*M!999999\- enable the sandbox mode */ 
 -- MariaDB dump 10.19-11.4.8-MariaDB, for Linux (x86_64)
 --
 -- Host: db    Database: test_db
@@ -27,7 +27,7 @@ CREATE TABLE `itens` (
   `id` int NOT NULL AUTO_INCREMENT,
   `nome` varchar(255) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -36,9 +36,6 @@ CREATE TABLE `itens` (
 
 LOCK TABLES `itens` WRITE;
 /*!40000 ALTER TABLE `itens` DISABLE KEYS */;
-INSERT INTO `itens` VALUES
-(1,'asdasd'),
-(2,'asdasd');
 /*!40000 ALTER TABLE `itens` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -51,4 +48,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*M!100616 SET NOTE_VERBOSITY=@OLD_NOTE_VERBOSITY */;
 
--- Dump completed on 2025-11-12 22:25:48
+-- Dump completed on 2025-11-27  4:58:30
