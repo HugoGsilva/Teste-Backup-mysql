@@ -20,16 +20,19 @@ document.addEventListener('DOMContentLoaded', () => {
 	let autoBackupEnabled = false;
 	let currentTriggerSecond = 30;
 
-	// Estado do relógio sincronizado com servidor
-	let serverTimeOffset = 0; // Diferença entre horário do servidor e local
+	// Estado do relógio sincronizado com servidor (Horário de Brasília)
 	let serverHour = 0;
 	let serverMinute = 0;
 	let serverSecond = 0;
+	let serverDay = 1;
+	let serverMonth = 1;
+	let serverYear = 2025;
 	let lastSyncTime = 0;
+	let isSynced = false;
 
 	// ===== RELÓGIO EM TEMPO REAL =====
 
-	// Sincronizar com o servidor
+	// Sincronizar com o servidor (horário de Brasília via Luxon)
 	async function syncWithServer() {
 		try {
 			const res = await fetch('/api/current-time');
@@ -38,15 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
 				serverHour = data.hour;
 				serverMinute = data.minute;
 				serverSecond = data.second;
+				serverDay = data.day;
+				serverMonth = data.month;
+				serverYear = data.year;
 				lastSyncTime = Date.now();
-				console.log(`Sincronizado com servidor: ${data.formatted}`);
+				isSynced = true;
+				console.log(`✅ Sincronizado com Brasília: ${data.formatted} (${data.timezone})`);
 			}
 		} catch (err) {
-			console.error('Erro ao sincronizar com servidor:', err);
+			console.error('❌ Erro ao sincronizar com servidor:', err);
 		}
 	}
 
 	function updateClock() {
+		if (!isSynced) {
+			clockDisplay.textContent = '--:--:--';
+			dateDisplay.textContent = 'Sincronizando...';
+			return;
+		}
+
 		// Calcular tempo decorrido desde última sincronização
 		const elapsed = Math.floor((Date.now() - lastSyncTime) / 1000);
 		
@@ -61,10 +74,10 @@ document.addEventListener('DOMContentLoaded', () => {
 		const minutes = Math.floor((totalSeconds % 3600) / 60);
 		const seconds = totalSeconds % 60;
 
-		const now = new Date();
-		const day = String(now.getDate()).padStart(2, '0');
-		const month = String(now.getMonth() + 1).padStart(2, '0');
-		const year = now.getFullYear();
+		// Usar data do servidor (Brasília)
+		const day = String(serverDay).padStart(2, '0');
+		const month = String(serverMonth).padStart(2, '0');
+		const year = serverYear;
 
 		clockDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 		dateDisplay.textContent = `${day}/${month}/${year}`;
@@ -86,22 +99,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
 		countdownDisplay.textContent = secondsUntilBackup;
 
-		// Destacar quando estiver próximo
+		// Destacar quando estiver próximo (ajustado para tema neon)
 		if (secondsUntilBackup <= 5) {
-			nextBackupInfo.style.background = '#fff3cd';
-			nextBackupInfo.style.borderColor = '#ffc107';
+			nextBackupInfo.style.background = 'linear-gradient(135deg, rgba(255, 23, 68, 0.2) 0%, rgba(255, 145, 0, 0.1) 100%)';
+			nextBackupInfo.style.borderLeftColor = '#ff1744';
 		} else {
-			nextBackupInfo.style.background = '#e7f3ff';
-			nextBackupInfo.style.borderColor = '#667eea';
+			nextBackupInfo.style.background = 'linear-gradient(135deg, rgba(0, 243, 255, 0.1) 0%, rgba(255, 23, 68, 0.05) 100%)';
+			nextBackupInfo.style.borderLeftColor = '#00f3ff';
 		}
 	}
 
-	// Sincronizar imediatamente e depois a cada 30 segundos
+	// Sincronizar imediatamente ao carregar
 	syncWithServer();
-	setInterval(syncWithServer, 30000);
-
+	
 	// Atualizar relógio a cada segundo
 	setInterval(updateClock, 1000);
+	
+	// Re-sincronizar com o servidor a cada 10 segundos para manter precisão
+	setInterval(syncWithServer, 10000);
 
 	// ===== BACKUP AUTOMÁTICO =====
 
@@ -125,16 +140,16 @@ document.addEventListener('DOMContentLoaded', () => {
 		if (autoBackupEnabled) {
 			autoStatus.classList.remove('inactive');
 			autoStatus.classList.add('active');
-			autoStatus.querySelector('span').textContent = 'Ativo';
-			toggleAutoBackupBtn.textContent = 'Desativar Backup Automático';
+			autoStatus.querySelector('span').textContent = 'Online ⚡';
+			toggleAutoBackupBtn.textContent = '⏹️ Desativar Sistema';
 			toggleAutoBackupBtn.classList.remove('btn-primary');
 			toggleAutoBackupBtn.classList.add('btn-danger');
 			nextBackupInfo.style.display = 'block';
 		} else {
 			autoStatus.classList.remove('active');
 			autoStatus.classList.add('inactive');
-			autoStatus.querySelector('span').textContent = 'Desativado';
-			toggleAutoBackupBtn.textContent = 'Ativar Backup Automático';
+			autoStatus.querySelector('span').textContent = 'Offline';
+			toggleAutoBackupBtn.textContent = '⚡ Iniciar Sistema';
 			toggleAutoBackupBtn.classList.remove('btn-danger');
 			toggleAutoBackupBtn.classList.add('btn-primary');
 			nextBackupInfo.style.display = 'none';

@@ -3,81 +3,141 @@
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width,initial-scale=1" />
-	<title>Sistema de Backup MySQL - Brasília</title>
+	<title>Backup Manager</title>
+	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 	<style>
+		:root {
+			--neon-blue: #00d4ff;
+			--neon-blue-glow: rgba(0, 212, 255, 0.4);
+			--neon-red: #ff3366;
+			--neon-red-glow: rgba(255, 51, 102, 0.3);
+			--space-black: #050510;
+			--space-dark: #0a0a1a;
+			--card-bg: rgba(15, 15, 35, 0.85);
+			--card-border: rgba(0, 212, 255, 0.15);
+			--text-white: #ffffff;
+			--text-light: #e0e0f0;
+			--text-muted: #8888aa;
+		}
+
 		* { margin: 0; padding: 0; box-sizing: border-box; }
 		
 		body {
-			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+			background: var(--space-black);
 			min-height: 100vh;
-			padding: 20px;
+			padding: 24px;
+			color: var(--text-light);
+			line-height: 1.6;
 		}
+
+		
 		
 		.container {
 			max-width: 900px;
 			margin: 0 auto;
+			position: relative;
+			z-index: 1;
 		}
-		
-		.card {
-			background: rgba(255, 255, 255, 0.95);
-			border-radius: 16px;
-			padding: 24px;
-			margin-bottom: 20px;
-			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-			backdrop-filter: blur(10px);
+
+		/* Header */
+		.header {
+			text-align: center;
+			margin-bottom: 40px;
+			padding: 20px 0;
 		}
-		
-		h1 {
-			color: #333;
+
+		.header h1 {
+			font-size: 2rem;
+			font-weight: 700;
+			color: var(--text-white);
+			letter-spacing: 1px;
 			margin-bottom: 8px;
-			font-size: 2em;
+		}
+
+		.header h1 span {
+			color: var(--neon-blue);
+		}
+
+		.header p {
+			color: var(--text-muted);
+			font-size: 0.95rem;
+			font-weight: 400;
+		}
+		
+		/* Cards */
+		.card {
+			background: var(--card-bg);
+			border-radius: 16px;
+			padding: 28px;
+			margin-bottom: 24px;
+			border: 1px solid var(--card-border);
+			backdrop-filter: blur(20px);
 		}
 		
 		h2 {
-			color: #555;
-			margin-bottom: 16px;
-			font-size: 1.3em;
-			border-bottom: 2px solid #667eea;
-			padding-bottom: 8px;
+			color: var(--text-white);
+			margin-bottom: 24px;
+			font-size: 1rem;
+			font-weight: 600;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			letter-spacing: 0.5px;
+		}
+
+		h2 .icon {
+			font-size: 1.2rem;
+		}
+
+		h2::after {
+			content: '';
+			flex: 1;
+			height: 1px;
+			background: linear-gradient(90deg, var(--card-border), transparent);
 		}
 		
 		/* Relógio */
 		.clock-container {
 			text-align: center;
-			padding: 32px 24px;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
-			border-radius: 16px;
+			padding: 48px 32px;
+			background: linear-gradient(180deg, var(--space-dark) 0%, var(--space-black) 100%);
+			border-radius: 12px;
+			border: 1px solid var(--card-border);
 		}
 		
 		.clock-label {
-			font-size: 1.2em;
-			opacity: 0.9;
-			margin-bottom: 12px;
+			font-size: 0.8rem;
+			color: var(--neon-red);
+			margin-bottom: 16px;
 			font-weight: 500;
+			letter-spacing: 3px;
+			text-transform: uppercase;
 		}
 		
 		.clock-display {
-			font-size: 4em;
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 4rem;
 			font-weight: 700;
-			font-family: 'Courier New', monospace;
-			text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+			color: var(--neon-blue);
 			letter-spacing: 4px;
 		}
 		
 		.date-display {
-			font-size: 1.4em;
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 1.1rem;
 			margin-top: 12px;
-			opacity: 0.95;
+			color: var(--text-muted);
+			letter-spacing: 2px;
+			font-weight: 400;
 		}
 		
-		/* Backup Automático */
-		.auto-backup-controls {
+		/* Controles */
+		.controls-grid {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
-			gap: 16px;
-			margin-bottom: 20px;
+			gap: 24px;
+			margin-bottom: 24px;
 		}
 		
 		.control-group {
@@ -87,182 +147,273 @@
 		}
 		
 		label {
-			font-weight: 600;
-			color: #555;
-			font-size: 0.95em;
+			font-weight: 500;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			letter-spacing: 0.3px;
 		}
 		
-		input[type="number"] {
-			padding: 12px;
-			border: 2px solid #ddd;
-			border-radius: 8px;
-			font-size: 1em;
-			transition: all 0.3s;
+		input[type="number"], input[type="text"] {
+			padding: 14px 16px;
+			border: 1px solid var(--card-border);
+			border-radius: 10px;
+			font-size: 1rem;
+			font-family: 'Inter', sans-serif;
+			background: var(--space-dark);
+			color: var(--text-white);
 		}
 		
-		input[type="number"]:focus {
+		input[type="number"]:focus, input[type="text"]:focus {
 			outline: none;
-			border-color: #667eea;
-			box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+			border-color: var(--neon-blue);
+		}
+
+		input::placeholder {
+			color: var(--text-muted);
+		}
+
+		small {
+			color: var(--text-muted);
+			font-size: 0.8rem;
 		}
 		
+		/* Status */
 		.status-indicator {
 			display: flex;
 			align-items: center;
 			gap: 12px;
 			padding: 16px;
-			border-radius: 8px;
-			font-weight: 600;
+			border-radius: 10px;
+			font-weight: 500;
+			font-size: 0.95rem;
 		}
 		
 		.status-indicator.active {
-			background: #d4edda;
-			color: #155724;
+			background: rgba(0, 212, 255, 0.1);
+			color: var(--neon-blue);
+			border: 1px solid rgba(0, 212, 255, 0.3);
 		}
 		
 		.status-indicator.inactive {
-			background: #f8d7da;
-			color: #721c24;
+			background: rgba(255, 51, 102, 0.1);
+			color: var(--neon-red);
+			border: 1px solid rgba(255, 51, 102, 0.2);
 		}
 		
 		.status-dot {
-			width: 12px;
-			height: 12px;
+			width: 10px;
+			height: 10px;
 			border-radius: 50%;
-			animation: pulse 2s infinite;
 		}
 		
 		.status-indicator.active .status-dot {
-			background: #28a745;
+			background: var(--neon-blue);
 		}
 		
 		.status-indicator.inactive .status-dot {
-			background: #dc3545;
-			animation: none;
-		}
-		
-		@keyframes pulse {
-			0%, 100% { opacity: 1; }
-			50% { opacity: 0.5; }
+			background: var(--neon-red);
 		}
 		
 		.next-backup {
-			margin-top: 12px;
-			padding: 12px;
-			background: #e7f3ff;
-			border-left: 4px solid #667eea;
-			border-radius: 4px;
-			font-size: 0.95em;
+			margin-top: 20px;
+			padding: 16px 20px;
+			background: #e8f4f8;
+			border: 2px solid #0088cc;
+			border-radius: 10px;
+			font-size: 1rem;
+			font-weight: 600;
+			color: #1a3a4a;
+		}
+
+		.next-backup strong {
+			color: #005588;
+			font-family: 'JetBrains Mono', monospace;
+			font-size: 1.5rem;
+			margin: 0 6px;
 		}
 		
 		/* Botões */
 		button {
-			padding: 12px 24px;
+			padding: 14px 24px;
 			border: none;
-			border-radius: 8px;
-			font-size: 1em;
+			border-radius: 10px;
+			font-size: 0.9rem;
 			font-weight: 600;
+			font-family: 'Inter', sans-serif;
 			cursor: pointer;
-			transition: all 0.3s;
-			box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-		}
-		
-		button:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-		}
-		
-		button:active {
-			transform: translateY(0);
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
 		}
 		
 		.btn-primary {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-			color: white;
+			background: var(--neon-blue);
+			color: var(--space-black);
 		}
 		
 		.btn-success {
-			background: #28a745;
-			color: white;
+			background: #00c853;
+			color: var(--space-black);
 		}
 		
 		.btn-danger {
-			background: #dc3545;
-			color: white;
+			background: var(--neon-red);
+			color: var(--text-white);
 		}
 		
 		.btn-warning {
-			background: #ffc107;
-			color: #212529;
+			background: #ff9100;
+			color: var(--space-black);
 		}
 		
 		.btn-toggle {
 			width: 100%;
-			margin-top: 12px;
+			padding: 16px 24px;
 		}
 		
-		/* Controles de dados */
+		/* Layout de controles */
 		.data-controls {
 			display: flex;
 			align-items: flex-end;
-			gap: 12px;
-			margin-bottom: 20px;
+			gap: 16px;
+			margin-bottom: 24px;
 		}
 		
-		.data-controls input {
+		.data-controls .control-group {
 			flex: 1;
 		}
 		
 		.action-buttons {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			grid-template-columns: repeat(3, 1fr);
 			gap: 12px;
-			margin-bottom: 20px;
+			margin-bottom: 24px;
 		}
 		
 		/* Lista de dados */
+		.data-section {
+			margin-top: 24px;
+			padding-top: 24px;
+			border-top: 1px solid var(--card-border);
+		}
+
+		.data-title {
+			font-size: 0.8rem;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			letter-spacing: 2px;
+			margin-bottom: 16px;
+			font-weight: 500;
+		}
+
 		#data-list {
-			margin-top: 20px;
-			max-height: 300px;
+			max-height: 280px;
 			overflow-y: auto;
+		}
+
+		#data-list::-webkit-scrollbar {
+			width: 4px;
+		}
+
+		#data-list::-webkit-scrollbar-track {
+			background: var(--space-dark);
+			border-radius: 2px;
+		}
+
+		#data-list::-webkit-scrollbar-thumb {
+			background: var(--neon-blue);
+			border-radius: 2px;
 		}
 		
 		.item {
-			padding: 12px;
-			border-bottom: 1px solid #eee;
-			transition: background 0.2s;
+			padding: 14px 16px;
+			background: var(--space-dark);
+			border-radius: 8px;
+			margin-bottom: 8px;
+			border-left: 2px solid var(--neon-blue);
+			color: var(--text-light);
+			font-size: 0.95rem;
+		}
+
+		.empty-state {
+			text-align: center;
+			padding: 40px 20px;
+			color: var(--text-muted);
+		}
+
+		.empty-state .icon {
+			font-size: 2.5rem;
+			margin-bottom: 12px;
+			opacity: 0.5;
 		}
 		
-		.item:hover {
-			background: #f8f9fa;
+		/* Footer */
+		.footer {
+			text-align: center;
+			padding: 32px 20px;
+			color: var(--text-muted);
+			font-size: 0.85rem;
 		}
-		
-		.item:last-child {
-			border-bottom: none;
+
+		.footer .star {
+			color: var(--neon-red);
+		}
+
+		.footer .highlight {
+			color: var(--neon-blue);
 		}
 		
 		/* Responsivo */
 		@media (max-width: 768px) {
-			.auto-backup-controls {
+			body {
+				padding: 16px;
+			}
+
+			.header h1 {
+				font-size: 1.5rem;
+			}
+
+			.controls-grid {
 				grid-template-columns: 1fr;
 			}
 			
 			.clock-display {
-				font-size: 2.5em;
+				font-size: 2.5rem;
+				letter-spacing: 2px;
 			}
 			
 			.action-buttons {
 				grid-template-columns: 1fr;
+			}
+
+			.data-controls {
+				flex-direction: column;
+				align-items: stretch;
+			}
+
+			.data-controls button {
+				width: 100%;
+			}
+
+			.card {
+				padding: 20px;
 			}
 		}
 	</style>
 </head>
 <body>
 	<div class="container">
-		<!-- Relógio de Brasília -->
+		<!-- Header -->
+		<div class="header">
+			<h1><span>Backup</span> Manager</h1>
+			<p>Sistema de Backup MySQL</p>
+		</div>
+
+		<!-- Relógio -->
 		<div class="card">
 			<div class="clock-container">
-				<div class="clock-label">Horário de Brasília (UTC-3)</div>
+				<div class="clock-label">Horário de Brasília</div>
 				<div class="clock-display" id="clock">--:--:--</div>
 				<div class="date-display" id="date">--/--/----</div>
 			</div>
@@ -270,53 +421,62 @@
 		
 		<!-- Backup Automático -->
 		<div class="card">
-			<h2>⚙️ Backup Automático</h2>
+			<h2>Backup Automático</h2>
 			
-			<div class="auto-backup-controls">
+			<div class="controls-grid">
 				<div class="control-group">
 					<label for="trigger-second">Executar nos segundos:</label>
 					<input id="trigger-second" type="number" min="0" max="59" value="30" placeholder="0-59" />
-					<small style="color: #666;">O backup será executado quando o relógio atingir este segundo (a cada minuto)</small>
+					<small>Backup executado quando atingir este segundo</small>
 				</div>
 				
 				<div class="control-group">
-					<label>Status do Backup Automático:</label>
+					<label>Status do Sistema:</label>
 					<div id="auto-status" class="status-indicator inactive">
 						<div class="status-dot"></div>
-						<span>Desativado</span>
+						<span>Offline</span>
 					</div>
 				</div>
 			</div>
 			
 			<button id="toggle-auto-backup" class="btn-primary btn-toggle">
-				Ativar Backup Automático
+				Iniciar Backup Automático
 			</button>
 			
 			<div id="next-backup-info" class="next-backup" style="display: none;">
-				⏱️ Próximo backup em: <strong id="countdown">--</strong> segundos
+				Próximo backup em: <strong id="countdown">--</strong> segundos
 			</div>
 		</div>
 		
-		<!-- Controles de Dados -->
+		<!-- Dados -->
 		<div class="card">
-			<h2>📊 Gerenciar Dados</h2>
+			<h2>Gerenciar Dados</h2>
 			
 			<div class="data-controls">
-				<div style="flex: 1;">
-					<label for="item-input">Novo item:</label>
-					<input id="item-input" type="text" placeholder="Digite um valor" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; margin-top: 4px;" />
+				<div class="control-group">
+					<label for="item-input">Novo registro:</label>
+					<input id="item-input" type="text" placeholder="Digite um valor..." />
 				</div>
 				<button id="insert-btn" class="btn-primary">Inserir</button>
 			</div>
 			
 			<div class="action-buttons">
-				<button id="backup-btn" class="btn-success">📦 Fazer Backup</button>
-				<button id="destroy-btn" class="btn-danger">💥 Simular Desastre</button>
-				<button id="restore-btn" class="btn-warning">♻️ Recuperar</button>
+				<button id="backup-btn" class="btn-success">Backup</button>
+				<button id="destroy-btn" class="btn-danger">Destruir</button>
+				<button id="restore-btn" class="btn-warning">Restaurar</button>
 			</div>
 			
-			<div id="data-list"></div>
+			<div class="data-section">
+				<div class="data-title">Registros no Banco</div>
+				<div id="data-list">
+					<div class="empty-state">
+						<p>Carregando...</p>
+					</div>
+				</div>
+			</div>
 		</div>
+
+		
 	</div>
 
 	<script src="./main.js"></script>

@@ -197,7 +197,11 @@ app.get('/api/current-time', (req, res) => {
       formatted: brasiliaTime.toFormat('dd/MM/yyyy HH:mm:ss'),
       hour: brasiliaTime.hour,
       minute: brasiliaTime.minute,
-      second: brasiliaTime.second
+      second: brasiliaTime.second,
+      day: brasiliaTime.day,
+      month: brasiliaTime.month,
+      year: brasiliaTime.year,
+      timezone: 'America/Sao_Paulo'
     });
   } catch (err) {
     console.error('GET /api/current-time error:', err);
