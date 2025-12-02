@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { promisify } = require('util');
 const { execFile } = require('child_process');
+const { DateTime } = require('luxon');
 
 const execFileAsync = promisify(execFile);
 const fsp = fs.promises;
@@ -25,11 +26,9 @@ let autoBackupConfig = {
   lastBackupMinute: -1 // Controle para executar apenas uma vez por minuto
 };
 
-// Função para obter horário de Brasília
+// Função para obter horário de Brasília usando luxon
 function getBrasiliaTime() {
-  const now = new Date();
-  const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-  return new Date(now.getTime() + (brasiliaOffset - now.getTimezoneOffset()) * 60000);
+  return DateTime.now().setZone('America/Sao_Paulo');
 }
 
 const pool = mysql.createPool({
@@ -150,19 +149,9 @@ app.get('/api/backups', async (req, res) => {
 app.post('/api/trigger-backup', async (req, res) => {
   try {
     await ensureBackupDir();
-    // Formato brasileiro: DD-MM-YYYY_HH-MM-SS (horário de Brasília UTC-3)
-    const now = new Date();
-    const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-    const brasiliaTime = new Date(now.getTime() + (brasiliaOffset - now.getTimezoneOffset()) * 60000);
-
-    const day = String(brasiliaTime.getDate()).padStart(2, '0');
-    const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
-    const year = brasiliaTime.getFullYear();
-    const hours = String(brasiliaTime.getHours()).padStart(2, '0');
-    const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
-    const seconds = String(brasiliaTime.getSeconds()).padStart(2, '0');
-
-    const timestamp = `${day}-${month}-${year}_${hours}-${minutes}-${seconds}`;
+    // Formato brasileiro: DD-MM-YYYY_HH-MM-SS (horário de Brasília usando luxon)
+    const brasiliaTime = getBrasiliaTime();
+    const timestamp = brasiliaTime.toFormat('dd-MM-yyyy_HH-mm-ss');
     const filename = `backup-${timestamp}.sql`;
     const destination = path.join(BACKUP_DIR, filename);
     const dumpArgs = buildDumpArgs();
@@ -203,9 +192,12 @@ app.get('/api/current-time', (req, res) => {
   try {
     const brasiliaTime = getBrasiliaTime();
     res.json({
-      iso: brasiliaTime.toISOString(),
-      timestamp: brasiliaTime.getTime(),
-      formatted: brasiliaTime.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      iso: brasiliaTime.toISO(),
+      timestamp: brasiliaTime.toMillis(),
+      formatted: brasiliaTime.toFormat('dd/MM/yyyy HH:mm:ss'),
+      hour: brasiliaTime.hour,
+      minute: brasiliaTime.minute,
+      second: brasiliaTime.second
     });
   } catch (err) {
     console.error('GET /api/current-time error:', err);
@@ -248,15 +240,7 @@ async function executeAutoBackup() {
   try {
     await ensureBackupDir();
     const brasiliaTime = getBrasiliaTime();
-
-    const day = String(brasiliaTime.getDate()).padStart(2, '0');
-    const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
-    const year = brasiliaTime.getFullYear();
-    const hours = String(brasiliaTime.getHours()).padStart(2, '0');
-    const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
-    const seconds = String(brasiliaTime.getSeconds()).padStart(2, '0');
-
-    const timestamp = `${day}-${month}-${year}_${hours}-${minutes}-${seconds}`;
+    const timestamp = brasiliaTime.toFormat('dd-MM-yyyy_HH-mm-ss');
     const filename = `backup-${timestamp}.sql`;
     const destination = path.join(BACKUP_DIR, filename);
     const dumpArgs = buildDumpArgs();
@@ -315,17 +299,17 @@ async function waitForDb(retries = 15, delayMs = 2000) {
 
 const PORT = process.env.PORT || 3000;
 
-// Scheduler de backup automático - verifica a cada segundo
+// Scheduler de backup automático - verifica a cada segundo (usando horário de Brasília via luxon)
 setInterval(() => {
   if (!autoBackupConfig.enabled) return;
 
   const brasiliaTime = getBrasiliaTime();
-  const currentSecond = brasiliaTime.getSeconds();
-  const currentMinute = brasiliaTime.getMinutes();
+  const currentSecond = brasiliaTime.second;
+  const currentMinute = brasiliaTime.minute;
 
   // Executa apenas quando o segundo coincidir e não foi executado neste minuto
   if (currentSecond === autoBackupConfig.triggerSecond && currentMinute !== autoBackupConfig.lastBackupMinute) {
-    console.log(`[AUTO-BACKUP] Iniciando backup automático aos ${currentSecond} segundos`);
+    console.log(`[AUTO-BACKUP] Iniciando backup automático aos ${currentSecond} segundos (Horário Brasília: ${brasiliaTime.toFormat('HH:mm:ss')})`);
     autoBackupConfig.lastBackupMinute = currentMinute;
     executeAutoBackup();
   }

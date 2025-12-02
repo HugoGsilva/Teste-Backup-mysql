@@ -1,8 +1,13 @@
 from flask import Flask, jsonify
+from datetime import datetime
 import subprocess
 import os
+import pytz
 
 app = Flask(__name__)
+
+# Timezone de Brasília
+BRASILIA_TZ = pytz.timezone('America/Sao_Paulo')
 
 SCRIPT_DIR = os.getcwd()  # espera-se que os scripts estejam no diretório de trabalho da imagem
 
@@ -37,6 +42,19 @@ def restore():
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "ok"}), 200
+
+# Endpoint para obter horário de Brasília
+@app.route('/brasilia-time', methods=['GET'])
+def brasilia_time():
+    now_brasilia = datetime.now(BRASILIA_TZ)
+    return jsonify({
+        "iso": now_brasilia.isoformat(),
+        "timestamp": now_brasilia.timestamp(),
+        "formatted": now_brasilia.strftime('%d/%m/%Y %H:%M:%S'),
+        "hour": now_brasilia.hour,
+        "minute": now_brasilia.minute,
+        "second": now_brasilia.second
+    }), 200
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

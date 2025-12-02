@@ -20,33 +20,62 @@ document.addEventListener('DOMContentLoaded', () => {
 	let autoBackupEnabled = false;
 	let currentTriggerSecond = 30;
 
+	// Estado do relógio sincronizado com servidor
+	let serverTimeOffset = 0; // Diferença entre horário do servidor e local
+	let serverHour = 0;
+	let serverMinute = 0;
+	let serverSecond = 0;
+	let lastSyncTime = 0;
+
 	// ===== RELÓGIO EM TEMPO REAL =====
 
+	// Sincronizar com o servidor
+	async function syncWithServer() {
+		try {
+			const res = await fetch('/api/current-time');
+			if (res.ok) {
+				const data = await res.json();
+				serverHour = data.hour;
+				serverMinute = data.minute;
+				serverSecond = data.second;
+				lastSyncTime = Date.now();
+				console.log(`Sincronizado com servidor: ${data.formatted}`);
+			}
+		} catch (err) {
+			console.error('Erro ao sincronizar com servidor:', err);
+		}
+	}
+
 	function updateClock() {
+		// Calcular tempo decorrido desde última sincronização
+		const elapsed = Math.floor((Date.now() - lastSyncTime) / 1000);
+		
+		// Calcular horário atual baseado no servidor
+		let totalSeconds = serverHour * 3600 + serverMinute * 60 + serverSecond + elapsed;
+		
+		// Normalizar para 24 horas
+		totalSeconds = totalSeconds % 86400;
+		if (totalSeconds < 0) totalSeconds += 86400;
+		
+		const hours = Math.floor(totalSeconds / 3600);
+		const minutes = Math.floor((totalSeconds % 3600) / 60);
+		const seconds = totalSeconds % 60;
+
 		const now = new Date();
-		// Converter para horário de Brasília (UTC-3)
-		const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-		const brasiliaTime = new Date(now.getTime() + (brasiliaOffset - now.getTimezoneOffset()) * 60000);
+		const day = String(now.getDate()).padStart(2, '0');
+		const month = String(now.getMonth() + 1).padStart(2, '0');
+		const year = now.getFullYear();
 
-		const hours = String(brasiliaTime.getHours()).padStart(2, '0');
-		const minutes = String(brasiliaTime.getMinutes()).padStart(2, '0');
-		const seconds = String(brasiliaTime.getSeconds()).padStart(2, '0');
-
-		const day = String(brasiliaTime.getDate()).padStart(2, '0');
-		const month = String(brasiliaTime.getMonth() + 1).padStart(2, '0');
-		const year = brasiliaTime.getFullYear();
-
-		clockDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+		clockDisplay.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 		dateDisplay.textContent = `${day}/${month}/${year}`;
 
 		// Atualizar contador de próximo backup
 		if (autoBackupEnabled) {
-			updateCountdown(brasiliaTime);
+			updateCountdown(seconds);
 		}
 	}
 
-	function updateCountdown(brasiliaTime) {
-		const currentSecond = brasiliaTime.getSeconds();
+	function updateCountdown(currentSecond) {
 		let secondsUntilBackup;
 
 		if (currentSecond <= currentTriggerSecond) {
@@ -67,22 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
 		}
 	}
 
+	// Sincronizar imediatamente e depois a cada 30 segundos
+	syncWithServer();
+	setInterval(syncWithServer, 30000);
+
 	// Atualizar relógio a cada segundo
 	setInterval(updateClock, 1000);
-	updateClock();
-
-	// Sincronizar com o servidor a cada 30 segundos
-	setInterval(async () => {
-		try {
-			const res = await fetch('/api/current-time');
-			if (res.ok) {
-				// Servidor está sincronizado, apenas para validação
-				console.log('Relógio sincronizado com servidor');
-			}
-		} catch (err) {
-			console.error('Erro ao sincronizar relógio:', err);
-		}
-	}, 30000);
 
 	// ===== BACKUP AUTOMÁTICO =====
 
